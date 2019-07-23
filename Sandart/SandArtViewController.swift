@@ -27,7 +27,6 @@ class SandArtViewController: UIViewController,UITableViewDelegate, UITableViewDa
     var table:SandartEntryTable?
     var playerView:LandscapeAVPlayerViewController?
     var requestDic:Dictionary<String,Alamofire.Request> = Dictionary<String,Alamofire.Request>()
-    var downloadingPath = Array<IndexPath>()
     var timerSet = false
     var isEditMode = false//false : Normal Mode. true : EditMode
     var SandArtLanguages:LanguageData?
@@ -99,15 +98,18 @@ class SandArtViewController: UIViewController,UITableViewDelegate, UITableViewDa
             }
             
             self.update(indexPath: indexPath, withStatus: MovieStatus.Downloading)
-            downloadingPath.append(indexPath)
             let request = manager.download(url!,method: .get, to: destination)
                 .downloadProgress{progress in
+                        let currentIndexPath = IndexPath.init(row: (self.table?.indexForLangKey(langkey))!, section: 1)
                         self.table!.downloadProgress[langkey] = Float(progress.fractionCompleted)
-                    
+                    if let cell = self.tableView.cellForRow(at: currentIndexPath) as? LanguageTableViewCell {
+                        cell.Progress.progress = self.table!.downloadProgress[langkey] ?? 0.0
+                    }
                 }
                 .responseData{
                     response in
                     
+                    let currentIndexPath = IndexPath.init(row: (self.table?.indexForLangKey(langkey))!, section: 1)
                     if response.result.isFailure{
                         if response.error!.localizedDescription == "cancelled"{
                         }
@@ -119,21 +121,16 @@ class SandArtViewController: UIViewController,UITableViewDelegate, UITableViewDa
                             av.addAction(cancel)
                             self.present(av, animated: true, completion: nil)
                         }
-                        self.update(indexPath: indexPath, withStatus: MovieStatus.NotDownloaded)
+                        self.update(indexPath: currentIndexPath, withStatus: MovieStatus.NotDownloaded)
                     }
                     else{
                         self.addSkipBackupAttributeToItemAtURL(URL: response.destinationURL!)
-                        self.update(indexPath: indexPath, withStatus: MovieStatus.Downloaded)
+                        self.update(indexPath: currentIndexPath, withStatus: MovieStatus.Downloaded)
                     }
                     self.requestDic.removeValue(forKey: langkey)
-                    self.downloadingPath.remove(at: self.downloadingPath.firstIndex(of: indexPath)!)
               
             }
             requestDic[langkey] = request
-           if(!self.timerSet){
-            Timer.scheduledTimer(timeInterval: 0.5, target: self, selector: #selector(updatePeriodically(timer:)), userInfo: nil, repeats: true)
-                self.timerSet = true
-            }
             request.resume()
         }
 }
@@ -339,12 +336,7 @@ class SandArtViewController: UIViewController,UITableViewDelegate, UITableViewDa
     }
     
     func tableView(_ tableView: UITableView, canMoveRowAt indexPath: IndexPath) -> Bool {//notice a cell is reorderable
-        if downloadingPath.count != 0{//while downloading something else, block reorder
-            return false
-        }
-        else{
-            return true
-        }
+        return true
     }
     
     func tableView(_ tableView: UITableView, moveRowAt sourceIndexPath: IndexPath, to destinationIndexPath: IndexPath) {//actions when you reordered rows
@@ -366,18 +358,7 @@ class SandArtViewController: UIViewController,UITableViewDelegate, UITableViewDa
         }
         self.tableView.reloadData()
     }
-        
-    @objc func updatePeriodically(timer:Timer){//다운로드 진행중일 때 진행바를 갱신하기 위해 주기적으로 호출하는 함수
-        if self.downloadingPath.count == 0{
-            timer.invalidate()
-            self.timerSet = false
-            self.tableView.reloadData()//last reload
-            return
-        }
-        else{
-            self.tableView.reloadRows(at: self.downloadingPath, with: .none)
-        }
-    }
+
     //MARK:- BarButton's Action
     @IBAction func toggleEditMode(_ sender: Any) {
 
