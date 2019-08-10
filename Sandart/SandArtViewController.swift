@@ -14,7 +14,7 @@ import AVKit
 
 let MaxConcurrentDownload = 3
 
-class SandArtViewController: UIViewController,UITableViewDelegate, UITableViewDataSource {
+class SandArtViewController: UIViewController {
     
     @IBOutlet var tableView: UITableView!
     @IBOutlet var ReorderButton: UIBarButtonItem!
@@ -240,111 +240,7 @@ class SandArtViewController: UIViewController,UITableViewDelegate, UITableViewDa
             self.tableView.reloadRows(at: [indexPath], with: .none)
     }
     
-    //MARK: - tableviewDataSource
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        if section == 0{
-            return 1
-        }
-        else{
-        return self.SandArtLanguages!.count()
-        }
-    }
-    
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        
-        let Identifier = (indexPath.section == 0) ? "ImageCell" : "LanguageCell"
-        let Rawcell = tableView.dequeueReusableCell(withIdentifier: Identifier)
-        if(table == nil){
-            return Rawcell!
-        }
-         if(indexPath.section == 0)
-         {
-            Rawcell?.selectionStyle = UITableViewCell.SelectionStyle.none
-
-            return Rawcell!
-         }
-        else
-        {
-            let cell = Rawcell as! LanguageTableViewCell
-            let languageLabel = cell.viewWithTag(1) as! UILabel
-            let entry = table!.entryAtIndex(index: indexPath.row)
-            
-            
-            if(entry!.Title != ""){
-                languageLabel.text = entry!.Title
-            }
-            let actionButton = cell.contentView.viewWithTag(2) as! UIButton
-
-            actionButton.setTitle(entry!.LangKey, for: UIControl.State.application)//set product identifier for purchase
-            cell.selectionStyle = UITableViewCell.SelectionStyle.none
-            cell.Progress.setProgress(self.table!.downloadProgress[entry!.LangKey]!, animated: false)
-            self.updateButton(cell:cell, withStatus: entry!.Status,indexPath: indexPath)
-            return cell
-         
-        }
-    }
-    
-    func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {//notice if a cell is editable(insert,delete)
-        if(table==nil)
-        {
-            return false
-        }
-        if(table?.entryAtIndex(index: indexPath.row)==nil)
-        {
-            return false
-        }
-        if(indexPath.section != 0)
-        {
-            return true
-        }
-        else
-        {
-            return false
-        }
-    }
-    func numberOfSections(in tableView: UITableView) -> Int {
-        return 2
-    }
-    
-    func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {//actions when you edited row(insert,delete)
-        if(editingStyle == UITableViewCell.EditingStyle.delete)
-        {
-            let entry = table!.entryAtIndex(index: indexPath.row)
-            do{
-                let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-                let url = documentsURL.appendingPathComponent("SandArt/" + entry!.LangKey + ".mp4")
-                try FileManager.default.removeItem(at: url)
-            }
-            catch _{
-                NSLog("file delete error :")
-            }
-            self.update(indexPath: indexPath, withStatus: MovieStatus.NotDownloaded)
-        }
-        else if (editingStyle == UITableViewCell.EditingStyle.insert){
-            // Create a new instance of the appropriate class, insert it into the array, and add a new row to the table view
-        }
-    }
-    
-    func tableView(_ tableView: UITableView, editingStyleForRowAt indexPath: IndexPath) -> UITableViewCell.EditingStyle {//notice editing style(insert, delete)
-        if(indexPath.section != 0&&(table!.entryAtIndex(index: indexPath.row))!.Status == MovieStatus.Downloaded)//only for downloaded items
-        {
-            return .delete
-        }
-        else{//otherwise, nothing to do except reorder
-            return .none
-        }
-    }
-    
-    func tableView(_ tableView: UITableView, canMoveRowAt indexPath: IndexPath) -> Bool {//notice a cell is reorderable
-        return true
-    }
-    
-    func tableView(_ tableView: UITableView, moveRowAt sourceIndexPath: IndexPath, to destinationIndexPath: IndexPath) {//actions when you reordered rows
-                let temp = SandArtLanguages!.getLanguage(sourceIndexPath.row)
-                SandArtLanguages!.setLanguage(sourceIndexPath.row, data: SandArtLanguages!.getLanguage(destinationIndexPath.row))
-                SandArtLanguages!.setLanguage(destinationIndexPath.row, data: temp)
-                table!.swapEntry(from:sourceIndexPath.row,to:destinationIndexPath.row)
-    }
+   
  
     //MARK: - Update UI
     func displayUI(){
@@ -394,4 +290,120 @@ class SandArtViewController: UIViewController,UITableViewDelegate, UITableViewDa
         self.present(av, animated: true, completion: nil)
     }
     
+}
+
+// MARK: - tableviewDataSource
+extension SandArtViewController: UITableViewDataSource {
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        if section == 0{
+            return 1
+        }
+        else{
+            return self.SandArtLanguages!.count()
+        }
+    }
+    
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        
+        let Identifier = (indexPath.section == 0) ? "ImageCell" : "LanguageCell"
+        let Rawcell = tableView.dequeueReusableCell(withIdentifier: Identifier)
+        if(table == nil){
+            return Rawcell!
+        }
+        if(indexPath.section == 0)
+        {
+            Rawcell?.selectionStyle = UITableViewCell.SelectionStyle.none
+            
+            return Rawcell!
+        }
+        else
+        {
+            let cell = Rawcell as! LanguageTableViewCell
+            let languageLabel = cell.viewWithTag(1) as! UILabel
+            let entry = table!.entryAtIndex(index: indexPath.row)
+            
+            
+            if(entry!.Title != ""){
+                languageLabel.text = entry!.Title
+            }
+            let actionButton = cell.contentView.viewWithTag(2) as! UIButton
+            
+            actionButton.setTitle(entry!.LangKey, for: UIControl.State.application)//set product identifier for purchase
+            cell.selectionStyle = UITableViewCell.SelectionStyle.none
+            cell.Progress.setProgress(self.table!.downloadProgress[entry!.LangKey]!, animated: false)
+            self.updateButton(cell:cell, withStatus: entry!.Status,indexPath: indexPath)
+            return cell
+            
+        }
+    }
+    
+   
+    func numberOfSections(in tableView: UITableView) -> Int {
+        return 2
+    }
+    
+   
+    
+}
+
+// MARK: - UITableViewDelegate
+extension SandArtViewController: UITableViewDelegate {
+    func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {//notice if a cell is editable(insert,delete)
+        if(table==nil)
+        {
+            return false
+        }
+        if(table?.entryAtIndex(index: indexPath.row)==nil)
+        {
+            return false
+        }
+        if(indexPath.section != 0)
+        {
+            return true
+        }
+        else
+        {
+            return false
+        }
+    }
+    
+    func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {//actions when you edited row(insert,delete)
+        if(editingStyle == UITableViewCell.EditingStyle.delete)
+        {
+            let entry = table!.entryAtIndex(index: indexPath.row)
+            do{
+                let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+                let url = documentsURL.appendingPathComponent("SandArt/" + entry!.LangKey + ".mp4")
+                try FileManager.default.removeItem(at: url)
+            }
+            catch _{
+                NSLog("file delete error :")
+            }
+            self.update(indexPath: indexPath, withStatus: MovieStatus.NotDownloaded)
+        }
+        else if (editingStyle == UITableViewCell.EditingStyle.insert){
+            // Create a new instance of the appropriate class, insert it into the array, and add a new row to the table view
+        }
+    }
+    
+    func tableView(_ tableView: UITableView, editingStyleForRowAt indexPath: IndexPath) -> UITableViewCell.EditingStyle {//notice editing style(insert, delete)
+        if(indexPath.section != 0&&(table!.entryAtIndex(index: indexPath.row))!.Status == MovieStatus.Downloaded)//only for downloaded items
+        {
+            return .delete
+        }
+        else{//otherwise, nothing to do except reorder
+            return .none
+        }
+    }
+    
+    func tableView(_ tableView: UITableView, canMoveRowAt indexPath: IndexPath) -> Bool {//notice a cell is reorderable
+        return true
+    }
+    
+    func tableView(_ tableView: UITableView, moveRowAt sourceIndexPath: IndexPath, to destinationIndexPath: IndexPath) {//actions when you reordered rows
+        let temp = SandArtLanguages!.getLanguage(sourceIndexPath.row)
+        SandArtLanguages!.setLanguage(sourceIndexPath.row, data: SandArtLanguages!.getLanguage(destinationIndexPath.row))
+        SandArtLanguages!.setLanguage(destinationIndexPath.row, data: temp)
+        table!.swapEntry(from:sourceIndexPath.row,to:destinationIndexPath.row)
+    }
 }
